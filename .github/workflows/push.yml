@@ -25,7 +25,7 @@ jobs:
 
   terraform:
     name: "Terraform Init, Validate, Plan & Apply"
-    needs: [ kics ]
+    needs: [ kics ] #run job IF kics is successful
     if: github.event_name == 'push' 
 
     #If the *initial/first* "if" condition differs from the "on" condition, the job will be skipped
