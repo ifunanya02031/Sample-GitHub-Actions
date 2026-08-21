@@ -13,7 +13,7 @@ permissions:
 
 env:
   TERRAFORM_VERSION: 1.15.0
-  TERRAFORM_WORKING_DIR: 'src/s3' #Called specific module
+  TERRAFORM_WORKING_DIR: 'src/s3' #Called specific module with terraform files
 
 jobs:
   kics:
@@ -73,5 +73,5 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        run: terraform apply
+        run: terraform apply -auto- approve
         continue-on-error: true
