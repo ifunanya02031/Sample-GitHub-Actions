@@ -70,8 +70,8 @@ jobs:
          terraform plan -out=tfplan
          terraform show tfplan
         continue-on-error: false
-        
+
       - name: Terraform Apply
         id: apply
-        run: terraform apply -auto- approve
+        run: terraform apply -auto-approve
         continue-on-error: true
