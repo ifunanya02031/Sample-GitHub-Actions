@@ -18,7 +18,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Run KICS Scan
-      uses: checkmarx/kics-github-action@v1.7.0
+      uses: checkmarx/kics-github-action@v2.1.20
       with:
         path: ${{ inputs.WORKING_DIRECTORY }} #*
         token: ${{ secrets.GITHUB_TOKEN }} #*
