@@ -1,0 +1,77 @@
+name: push, pull & kics
+on:
+    pull_request:
+        branches:
+        - main
+    push:
+        branches:
+        - main
+
+permissions: 
+      #id-token: write - OIDC: AuthN WF for GitHub(IDP) to AWS without access keys
+      contents: read #1. WF reads repository content first
+
+env:
+  TERRAFORM_VERSION: 1.9.2
+  TERRAFORM_WORKING_DIR: 'src' #Called modules
+
+jobs:
+  kics:
+    name: "Run Kics scan on Terraform code"
+    uses: ./.github/workflows/terrakics.yml 
+    with:
+        ENABLE_COMMENTS: true #*
+        WORKING_DIRECTORY: './' # scan from root repo
+
+  terraform:
+    name: "Terraform Init, Validate, Plan & Apply"
+    needs: [ kics ]
+    if: github.event_name == 'push' 
+
+    #If the *initial/first* "if" condition differs from the "on" condition, the job will be skipped
+    #Because a job is within a workflow; it obeys the "on" first
+    #This particular job will run on a push
+    #Each job is INDEPENDENT of one another *unless it has '[needs]'
+
+#Everything you'd do on terminal:
+    runs-on: ubuntu-latest # Empty VM
+    defaults:
+      run:
+        working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
+
+    steps:
+      - name: 'Checkout repo' #2. Downloads the (full) repository onto the runner
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform #3. Downloads terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: true
+
+      - name: configure AWS credentials #4. Deploys resources in AWS
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID}} #GitHub Secret
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+  
+      - name: Terraform Init
+        id: init
+        run: terraform init 
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate 
+
+      - name: Terraform Plan
+        id: plan
+        run: | #
+         terraform plan
+         terraform show tfplan
+        continue-on-error: true
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve
+        continue-on-error: true
