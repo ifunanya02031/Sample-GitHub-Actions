@@ -18,7 +18,7 @@ env:
 jobs:
   kics:
     name: "Run Kics scan on Terraform code"
-    uses: ./.github/workflows/terrakics.yml 
+    uses: ./.github/workflows/terra-kics.yml 
     with:
         ENABLE_COMMENTS: true #*
         WORKING_DIRECTORY: './' # scan from root repo
