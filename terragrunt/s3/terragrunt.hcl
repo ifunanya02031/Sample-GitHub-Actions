@@ -3,5 +3,5 @@ include "root" {
 }
 
 terraform {
-  source = "../..//src/s3"
+  source = "../..//src/s3" #Called Module
 }

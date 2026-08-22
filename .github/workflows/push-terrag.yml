@@ -14,7 +14,7 @@ permissions:
 
 env:
   TERRAFORM_VERSION: 1.15.0
-  TERRAGRUNT_WORKING_DIR: 'terragrunt' #folder has root file
+  TERRAGRUNT_WORKING_DIR: 'terragrunt' #For terragrunt run-all | @ top of directory
 
 jobs:
 
@@ -60,6 +60,7 @@ jobs:
         uses: gruntwork-io/terragrunt-action@v2
         with:
           tg_version: latest
+          tf_version: ${{ env.TERRAFORM_VERSION }}
 
       # 4. Configure AWS credentials (To Deploy Resources)
       - name: Configure AWS credentials
@@ -79,7 +80,7 @@ jobs:
 
       # 7. Generate Terraform plan
       - name: Terragrunt Plan
-        run: terragrunt run --all plan
+        run: terragrunt run --all plan #for every (sub)folder without cd individually
 
       # 8. Apply infrastructure
       - name: Terragrunt Apply
