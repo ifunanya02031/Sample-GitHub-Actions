@@ -1,0 +1,86 @@
+name: push, pull & kics
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  # id-token: write # OIDC: allows GitHub to authenticate to AWS without access keys
+  contents: read # Allows workflow to read repository contents (FIRST)
+
+env:
+  TERRAFORM_VERSION: 1.15.0
+  TERRAGRUNT_WORKING_DIR: 'terragrunt' #folder has root file
+
+jobs:
+
+  # --------------------------------------------------
+  # KICS SECURITY SCAN
+  # --------------------------------------------------
+  kics:
+    name: "Run KICS scan on Terraform code"
+    uses: ./.github/workflows/terra-kics.yml
+    with:
+      ENABLE_COMMENTS: true
+      WORKING_DIRECTORY: './' # Scan from repository root
+
+  # --------------------------------------------------
+  # TERRAGRUNT DEPLOYMENT
+  # --------------------------------------------------
+  terragrunt:
+    name: "Terragrunt Init, Plan & Apply"
+    needs: [kics] #Runs first- depends on success
+    if: github.event_name == 'push'
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ env.TERRAGRUNT_WORKING_DIR }}
+
+    steps:
+
+      # 1. Download repository onto the runner
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 2. Install Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: true
+
+      # 3. Install Terragrunt (Terraform Wrapper)
+      - name: Setup Terragrunt
+        uses: gruntwork-io/terragrunt-action@v2
+        with:
+          tg_version: latest
+
+      # 4. Configure AWS credentials (To Deploy Resources)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # 5. Initialize Terragrunt/Terraform
+      - name: Terragrunt Init
+        run: terragrunt run --all init
+
+      # 6. Validate Terraform configurations
+      - name: Terragrunt Validate
+        run: terragrunt run --all validate
+
+      # 7. Generate Terraform plan
+      - name: Terragrunt Plan
+        run: terragrunt run --all plan
+
+      # 8. Apply infrastructure
+      - name: Terragrunt Apply
+        run: terragrunt run --all apply --non-interactive
