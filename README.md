@@ -1,107 +1,217 @@
-# Project 3: DevSecOps CI/CD Pipeline
 # DevSecOps CI/CD Pipeline
-Overview
 
-This project demonstrates a DevSecOps pipeline using GitHub Actions, Terraform, Terragrunt, and KICS to automate Infrastructure-as-Code validation, security scanning, and deployment.
+## Overview
 
-The goal was to integrate security checks directly into the CI/CD workflow and automate infrastructure provisioning through GitHub.
+This project demonstrates a DevSecOps CI/CD pipeline built with GitHub Actions, Terraform, Terragrunt, and KICS. The pipeline automates infrastructure validation, security scanning, planning, and deployment while incorporating Infrastructure-as-Code (IaC) security controls before AWS resources are provisioned.
 
-Architecture
-GitHub Push
+The goal of this project was to implement a repeatable deployment process that integrates security into the software delivery lifecycle through automation and Infrastructure-as-Code.
+
+---
+
+## Technologies Used
+
+### Cloud
+- AWS
+
+### Infrastructure as Code
+- Terraform
+- Terragrunt
+
+### CI/CD
+- GitHub Actions
+
+### Security
+- KICS (Keeping Infrastructure as Code Secure)
+
+### State Management
+- Amazon S3
+- DynamoDB
+
+---
+
+## Architecture
+
+```text
+Developer Push
       │
       ▼
 GitHub Actions
       │
       ▼
-KICS Scan
+KICS Security Scan
       │
       ▼
-Terraform/Terragrunt
+Terraform Validation
+      │
+      ▼
+Terraform Plan
+      │
+      ▼
+Terraform Apply
       │
       ▼
 AWS Infrastructure
-Technologies Used
-Technology	Purpose
-GitHub Actions	CI/CD automation
-Terraform	Infrastructure provisioning
-Terragrunt	Terraform orchestration
-KICS	IaC security scanning
-AWS	Cloud deployment
-S3	Remote state
-DynamoDB	State locking
-Workflow
-Pull Request
-PR Created
-    │
-    ▼
-KICS Scan
-Push to Main
-Push
-   │
-   ▼
-KICS Scan
-   │
-   ▼
-Terraform Validate
-   │
-   ▼
-Terraform Plan
-   │
-   ▼
-Terraform Apply
-Security Features
-KICS Integration
+```
 
-Infrastructure code is scanned for:
+---
 
-Hardcoded secrets
-Misconfigured security groups
-Publicly exposed resources
-IAM permission issues
-Encryption misconfigurations
-GitHub Secrets
+## Key Features
 
-AWS credentials stored securely using:
+### Infrastructure as Code
 
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_REGION
-Future Enhancements
-OIDC Federation
-AWS IAM Role Assumption
-Eliminate long-lived AWS credentials
-Terraform Structure
+Infrastructure is provisioned using Terraform modules to promote reusability and consistency.
+
+```text
 modules/
 ├── ec2/
 └── s3/
 
-
 src/
 ├── ec2/
 └── s3/
+```
 
+The `modules` directory contains reusable infrastructure definitions, while the `src` directory provides environment-specific values and module invocations.
 
-terragrunt/
-├── ec2/
-├── s3/
-└── root.hcl
-Terragrunt Features
-Remote State
+---
+
+### Terragrunt Orchestration
+
+Terragrunt is used as a wrapper around Terraform to:
+
+- Reduce configuration duplication
+- Centralize backend configuration
+- Manage Terraform remote state
+- Simplify multi-module deployments
+- Support environment-based deployments
+
+---
+
+### Security Scanning
+
+KICS is integrated into the pipeline to perform Infrastructure-as-Code security analysis before deployment.
+
+Example findings include:
+
+- Hardcoded secrets
+- Publicly exposed resources
+- Insecure security groups
+- Encryption misconfigurations
+- Excessive IAM permissions
+
+---
+
+### Remote State Management
+
+Terraform state is stored remotely using Amazon S3.
+
+```hcl
 remote_state {
   backend = "s3"
 }
+```
+
+Benefits include:
+
+- Centralized state management
+- Team collaboration support
+- State persistence
+- Disaster recovery capabilities
+
+---
+
+### State Locking
+
+DynamoDB is used to prevent concurrent Terraform executions.
+
+```hcl
+dynamodb_table = "terraform-state-locks"
+```
 
 Benefits:
 
-Centralized state storage
-State encryption
-Team collaboration
-Disaster recovery
-State Locking
-dynamodb_table = "my-DB-table-statelocking"
+- Prevents race conditions
+- Protects state integrity
+- Prevents simultaneous modifications
 
-Benefits:
+---
 
-Prevents concurrent deployments
-Protects state integrity
-Eliminates race conditions
+## Workflow
+
+### Pull Requests
+
+When a pull request is opened against the `main` branch:
+
+1. GitHub Actions is triggered
+2. KICS scans the Terraform codebase
+3. Security findings are reported
+
+### Pushes to Main
+
+When code is merged into `main`:
+
+1. KICS executes security scans
+2. Terraform validates configuration
+3. Terraform generates an execution plan
+4. Terraform deploys infrastructure
+5. AWS resources are provisioned
+
+---
+
+## Repository Structure
+
+```text
+.
+├── .github/
+│   └── workflows/
+│       ├── github-actions.yml
+│       └── terra-kics.yml
+│
+├── modules/
+│   ├── ec2/
+│   └── s3/
+│
+├── src/
+│   ├── ec2/
+│   └── s3/
+│
+└── terragrunt/
+    ├── ec2/
+    ├── s3/
+    └── root.hcl
+```
+
+---
+
+## Security Controls
+
+- Infrastructure-as-Code security scanning
+- Least-privilege AWS access
+- Remote state encryption
+- State locking
+- GitHub Secrets management
+- Terraform validation prior to deployment
+
+---
+
+## Future Improvements
+
+- AWS OIDC Federation
+- Multi-environment deployments
+- Automated rollback strategies
+- Additional SAST/DAST integrations
+- Policy-as-Code validation
+
+---
+
+## Lessons Learned
+
+This project provided hands-on experience with:
+
+- Infrastructure as Code
+- CI/CD automation
+- DevSecOps principles
+- Terraform modularization
+- Terragrunt orchestration
+- AWS state management
+- Security-first deployment pipelines
